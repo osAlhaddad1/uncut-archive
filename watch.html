@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Watch Uncut — The Archive</title>
+    <meta name="description" content="Browse reality dating shows and compare every aired scene with the raw footage it came from." />
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='7' fill='%23c07a6b'/%3E%3C/svg%3E" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Geist:wght@300..600&family=Geist+Mono:wght@400;500&family=Instrument+Serif:ital@0;1&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="assets/styles.css" />
+  </head>
+  <body>
+    <main>
+      <header class="page-head">
+        <div class="wrap">
+          <span class="eyebrow reveal">The archive</span>
+          <h1 class="display h1 reveal" data-d="1">Watch it <em>uncut.</em></h1>
+          <p class="lede reveal" data-d="2">
+            Pick a show, open an episode, and tap any scene to see it next to the raw footage it was cut from. Every
+            edit is labelled in plain language.
+          </p>
+        </div>
+      </header>
+
+      <section style="padding-top: 0">
+        <div class="wrap">
+          <div class="toolbar reveal">
+            <div class="seg" id="svc" role="tablist" aria-label="Streaming service"></div>
+            <label class="search">
+              <span data-i="search"></span>
+              <span class="sr">Search shows or cast</span>
+              <input id="q" type="search" placeholder="Search a show or a name" autocomplete="off" />
+            </label>
+          </div>
+          <div class="shows" id="shows"></div>
+          <div class="empty hidden" id="noshows">No shows match that search.</div>
+        </div>
+      </section>
+
+      <section style="padding-top: 0">
+        <div class="wrap">
+          <div class="bezel reveal">
+            <div class="core dark" style="padding: 44px">
+              <div class="sec-head" style="margin-bottom: 36px">
+                <div>
+                  <span class="eyebrow" style="background: rgba(192, 122, 107, 0.18); color: #e7b3a6">Edit labels</span>
+                  <h2 class="display h3">Learn to spot <em style="color: #e7b3a6">the seams.</em></h2>
+                </div>
+                <p style="margin: 0; color: rgba(251, 247, 242, 0.65)">
+                  These are the edits producers must disclose for every scene. Once you know the names, you'll start
+                  noticing them everywhere.
+                </p>
+              </div>
+              <div class="bento" id="glossary"></div>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <!-- show detail sheet -->
+    <div class="sheet-back" id="sheetBack"></div>
+    <aside class="sheet" id="sheet" aria-modal="true" role="dialog" aria-labelledby="sheetTitle">
+      <div class="sheet-scroll" id="sheetScroll"></div>
+    </aside>
+
+    <!-- scene viewer -->
+    <div class="viewer" id="viewer" role="dialog" aria-modal="true" aria-labelledby="viewerTitle">
+      <div class="viewer-inner" id="viewerInner"></div>
+    </div>
+
+    <footer>
+      <div class="wrap foot">
+        <div>
+          <div class="brand"><span class="brand-dot"></span>Uncut</div>
+          <div>Fictional shows and studios · illustrative figures · a student prototype</div>
+        </div>
+        <div class="foot-links">
+          <a href="index.html">The idea</a>
+          <a href="portal.html">Producer portal</a>
+        </div>
+      </div>
+    </footer>
+
+    <script src="assets/app.js"></script>
+    <script src="assets/watch.js"></script>
+  </body>
+</html>
