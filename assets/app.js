@@ -263,31 +263,11 @@ function showPage(r) {
 
   main.innerHTML = `
     <div class="page">
-      <div class="hero grain" style="${cover(show)}">
-        <p>${esc(serviceName(show.service))}</p>
-        <h1 class="l">${esc(show.title)}</h1>
-        <p>${esc(show.tagline)}</p>
+      <div class="head">
+        <div><p class="muted">${esc(show.title)}</p><h1 class="l">${esc(ep.title)}</h1></div>
       </div>
 
-      <div class="sec">
-        <div class="sec-h">Episodes</div>
-        <div class="list">
-          ${show.episodes
-            .map((e, i) => {
-              const a = isArchived(show, i, state.uploads);
-              return `<a class="item ${i === ei ? "on" : ""}" href="#/show/${show.id}/${i}">
-                <span>${esc(e.title)}</span>
-                <span style="display:flex;gap:16px;align-items:center;flex-wrap:wrap">
-                  <span class="meta">${e.airedMin} min aired of ${e.rawHours} h filmed</span>
-                  <span class="tag ${a ? "red" : ""}">${a ? "Uncut" : "Due"}</span>
-                </span></a>`;
-            })
-            .join("")}
-        </div>
-      </div>
-
-      <div class="sec">
-        <div class="sec-h">${esc(ep.title)}</div>
+      <div>
         ${
           ok
             ? `<a class="hero grain raw-ep" href="#/raw/${show.id}/${ei}" style="${cover(show, 1)}">
@@ -308,6 +288,23 @@ function showPage(r) {
           </div>`
             : `<p class="muted">The producer hasn't uploaded this episode yet. They have 72 hours after it airs.</p>`
         }
+      </div>
+
+      <div class="sec">
+        <div class="sec-h">Episodes</div>
+        <div class="list">
+          ${show.episodes
+            .map((e, i) => {
+              const a = isArchived(show, i, state.uploads);
+              return `<a class="item ${i === ei ? "on" : ""}" href="#/show/${show.id}/${i}">
+                <span>${esc(e.title)}</span>
+                <span style="display:flex;gap:16px;align-items:center;flex-wrap:wrap">
+                  <span class="meta">${e.airedMin} min aired of ${e.rawHours} h filmed</span>
+                  <span class="tag ${a ? "red" : ""}">${a ? "Uncut" : "Due"}</span>
+                </span></a>`;
+            })
+            .join("")}
+        </div>
       </div>
     </div>`;
 }
