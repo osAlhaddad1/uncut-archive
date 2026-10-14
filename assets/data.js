@@ -288,6 +288,11 @@ function cover(show, shift = 0) {
 
 const serviceName = (id) => SERVICES.find((s) => s.id === id).name;
 
+/* real clips (AI-generated stand-ins), keyed by scene id: show/episode/scene */
+const VIDEOS = {
+  "villa-amour/0/1": { aired: "media/breakfast-aired.mp4", raw: "media/breakfast-raw.mp4" },
+};
+
 /* ---------- helpers ---------- */
 const $ = (s, r = document) => r.querySelector(s);
 const $$ = (s, r = document) => [...r.querySelectorAll(s)];

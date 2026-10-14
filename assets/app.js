@@ -131,11 +131,15 @@ function renderSide(r) {
 /* ---------- shared ---------- */
 const share = (ep) => (ep.airedMin / (ep.rawHours * 60)) * 100;
 
+/* muted looping clip behind cover art */
+const bgVideo = (src) => `<video class="bg" src="${src}" autoplay muted loop playsinline preload="metadata" aria-hidden="true"></video>`;
+
 const sceneCover = (show, ei, si) => {
   const sc = sceneFor(show, ei, si);
+  const vid = VIDEOS[sc.id];
   return `
     <a class="cov" href="#/scene/${show.id}/${ei}/${si}">
-      <div class="art wide grain" style="${cover(show, si + 2)}"><p class="l">${esc(sc.title)}</p></div>
+      <div class="art wide grain" style="${cover(show, si + 2)}">${vid ? bgVideo(vid.aired) : ""}<p class="l">${esc(sc.title)}</p></div>
       <div class="cap"><p>${esc(show.title)}</p><p class="muted">${esc(sc.edits.join(", "))}</p></div>
     </a>`;
 };
@@ -219,6 +223,7 @@ function library() {
       </div>
 
       <a class="hero grain" href="#/show/${feat.id}" style="${cover(feat)}">
+        ${Object.entries(VIDEOS).find(([id]) => id.startsWith(feat.id + "/")) ? bgVideo(Object.entries(VIDEOS).find(([id]) => id.startsWith(feat.id + "/"))[1].aired) : ""}
         <p>${esc(serviceName(feat.service))}</p>
         <h2 class="l">${esc(feat.title)}</h2>
         <p>You saw ${featShare.toFixed(2)}% of what was filmed.</p>
@@ -317,6 +322,7 @@ function scenePage(r) {
   const ep = show?.episodes[r.b];
   if (!ep || ep.scenes[r.c] === undefined || !state.linked.includes(show.service)) return go("#/library");
   const sc = sceneFor(show, r.b, r.c);
+  const vid = VIDEOS[sc.id];
   const nextHref = ep.scenes[r.c + 1] !== undefined ? `#/scene/${show.id}/${r.b}/${r.c + 1}` : null;
 
   /* each raw line takes time relative to its length */
@@ -348,11 +354,15 @@ function scenePage(r) {
 
       <div class="compare" id="screens">
         <div>
-          <div class="screen grain" id="airedScreen"><div class="fill" style="${cover(show)}"></div><div class="sub" id="airedSub"></div></div>
+          <div class="screen grain" id="airedScreen">${
+            vid ? `<video class="clip" id="airedVid" src="${vid.aired}" muted playsinline preload="auto"></video>` : `<div class="fill" style="${cover(show)}"></div>`
+          }<div class="sub" id="airedSub"></div></div>
           <div class="screen-cap"><span>As aired</span><span class="muted">${esc(serviceName(show.service))}</span></div>
         </div>
         <div>
-          <div class="screen raw grain"><div class="fill" style="${cover(show)}"></div><div class="corner"><span class="dot"></span>Raw</div><div class="sub" id="rawSub"></div></div>
+          <div class="screen raw grain">${
+            vid ? `<video class="clip" id="rawVid" src="${vid.raw}" muted playsinline preload="auto"></video>` : `<div class="fill" style="${cover(show)}"></div>`
+          }<div class="corner"><span class="dot"></span>Raw</div><div class="sub" id="rawSub"></div></div>
           <div class="screen-cap"><span>Raw footage</span><span class="muted">${esc(sc.cam)}</span></div>
         </div>
       </div>
@@ -416,45 +426,97 @@ function scenePage(r) {
     })
   );
 
-  /* playback simulation */
+  /* playback: real clips when we have them, otherwise a simulation */
   let t = 0;
   let playing = true;
   let lastR, lastA;
   const fmt = (s) => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, "0")}`;
   const sub = (w, x) => (w ? `${esc(w)}: ${esc(x)}` : `<span style="opacity:.8">${esc(x)}</span>`);
+  const rv = $("#rawVid");
+  const av = $("#airedVid");
+
+  /* with real clips, both play side by side for their whole length */
+  const airedFrac = () => (av && av.duration ? av.currentTime / av.duration : null);
+
   const paint = () => {
     const rl = raw.find((x) => t >= x.s && t < x.s + x.d);
     if (rl !== lastR) {
       $("#rawSub").innerHTML = rl ? sub(rl.w, rl.t) : "";
       lastR = rl;
     }
-    const ai = t >= A ? -1 : Math.min(sc.aired.length - 1, Math.floor((t / A) * sc.aired.length));
+    const f = airedFrac();
+    const ai =
+      f !== null
+        ? Math.min(sc.aired.length - 1, Math.floor(f * sc.aired.length))
+        : t >= A
+        ? -1
+        : Math.min(sc.aired.length - 1, Math.floor((t / A) * sc.aired.length));
     if (ai !== lastA) {
       $("#airedSub").innerHTML = ai < 0 ? `<span style="opacity:.8">The aired scene is over</span>` : sub(...sc.aired[ai]);
-      $("#airedScreen .fill").style.opacity = ai < 0 ? 0.35 : 1;
+      const fillEl = $("#airedScreen .fill");
+      if (fillEl) fillEl.style.opacity = ai < 0 ? 0.35 : 1;
       lastA = ai;
     }
     $("#prog").style.width = (t / T) * 100 + "%";
     $("#h1").style.left = (t / T) * 100 + "%";
-    $("#h2").style.left = (Math.min(t, A) / T) * 100 + "%";
-    $("#clock").textContent = `${fmt(t)} / ${fmt(T)}`;
+    $("#h2").style.left = (f !== null ? f * A : Math.min(t, A)) / T * 100 + "%";
+    $("#clock").textContent = rv && rv.duration ? `${fmt(rv.currentTime)} / ${fmt(rv.duration)}` : `${fmt(t)} / ${fmt(T)}`;
   };
+
+  if (rv && av) {
+    const start = () => {
+      [rv, av].forEach((v) => v.play().catch(() => {}));
+    };
+    /* when the raw clip ends, restart both together so they stay in step */
+    rv.addEventListener("ended", () => {
+      rv.currentTime = 0;
+      av.currentTime = 0;
+      if (playing) start();
+    });
+    av.addEventListener("ended", () => {
+      av.pause();
+    });
+    start();
+    state.timers.push(
+      setInterval(() => {
+        if (rv.duration) t = (rv.currentTime / rv.duration) * T;
+        paint();
+      }, 100)
+    );
+  } else {
+    state.timers.push(
+      setInterval(() => {
+        if (!playing) return;
+        t = (t + 0.1) % T;
+        paint();
+      }, 100)
+    );
+  }
   paint();
-  state.timers.push(
-    setInterval(() => {
-      if (!playing) return;
-      t = (t + 0.1) % T;
-      paint();
-    }, 100)
-  );
+
   $("#play").addEventListener("click", () => {
     playing = !playing;
     $("#play").textContent = playing ? "Pause" : "Play";
     $("#screens").classList.toggle("paused", !playing);
+    if (rv && av) {
+      if (playing) {
+        rv.play().catch(() => {});
+        if (av.currentTime < av.duration) av.play().catch(() => {});
+      } else {
+        rv.pause();
+        av.pause();
+      }
+    }
   });
   $("#track").addEventListener("click", (e) => {
     const b = e.currentTarget.getBoundingClientRect();
-    t = ((e.clientX - b.left) / b.width) * T;
+    const frac = (e.clientX - b.left) / b.width;
+    if (rv && av && rv.duration) {
+      rv.currentTime = frac * rv.duration;
+      av.currentTime = Math.min(frac * av.duration, av.duration - 0.05);
+      if (playing) av.play().catch(() => {});
+    }
+    t = frac * T;
     paint();
   });
 }
