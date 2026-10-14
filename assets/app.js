@@ -691,7 +691,7 @@ function about() {
       <div class="prose">
         <p>Reality dating shows film for hundreds of hours to make one episode. What you see is a story built in the edit, but it's sold as real.</p>
         <p>That matters. We compare our own looks and relationships to what we see, and heavy viewing slowly shapes what feels normal. When an edit is unfair, a real person gets the hate.</p>
-        <p>Uncut is an intervention for viewers aged 18 to 30. Producers must archive all the footage they film, unedited, within 72 hours of airing. You can open it from the app you already use, next to every scene.</p>
+        <p>Uncut is an intervention for viewers aged 18 to 34. Producers must archive all the footage they film, unedited, within 72 hours of airing. You can open it from the app you already use, next to every scene.</p>
       </div>
     </div>`;
 }

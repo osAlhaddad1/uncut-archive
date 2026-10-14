@@ -4,7 +4,7 @@ Reality dating shows film for hundreds of hours to make one episode. Uncut is a 
 concept: producers must archive all of the footage, unedited, and viewers can open it next to every scene from
 the streaming apps they already use.
 
-Built for viewers aged 18 to 30.
+Built for viewers aged 18 to 34.
 
 ## The app
 
