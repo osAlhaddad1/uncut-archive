@@ -441,7 +441,9 @@ function scenePage(r) {
   const paint = () => {
     const rl = raw.find((x) => t >= x.s && t < x.s + x.d);
     if (rl !== lastR) {
-      $("#rawSub").innerHTML = rl ? sub(rl.w, rl.t) : "";
+      /* over real raw footage only the people behind the camera get subtitles */
+      const offCam = rl && ["Director", "Producer", "Crew"].includes(rl.w);
+      $("#rawSub").innerHTML = !rl ? "" : vid ? (offCam ? `${esc(rl.w)} (off camera): ${esc(rl.t)}` : "") : sub(rl.w, rl.t);
       lastR = rl;
     }
     const f = airedFrac();
