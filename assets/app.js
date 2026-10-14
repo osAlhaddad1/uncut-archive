@@ -12,6 +12,9 @@ const state = {
   urls: [],
 };
 
+const LOGO = `<svg class="logo" width="18" height="18" viewBox="0 0 18 18" aria-hidden="true"><circle cx="9" cy="9" r="8" fill="none" stroke="currentColor" stroke-width="1.4"/><circle cx="9" cy="9" r="4" fill="currentColor"/></svg>`;
+const serviceIcon = (s) => `<span class="svc-ico" aria-hidden="true">${esc(s.name[0])}</span>`;
+
 const app = $("#app");
 const side = $("#side");
 const main = $("#main");
@@ -50,12 +53,12 @@ function render() {
   state.urls.splice(0).forEach((u) => URL.revokeObjectURL(u));
 
   const r = route();
-  const open = ["connect", "producer", "about", "edits"];
+  const open = ["connect", "producer", "about"];
   if (!open.includes(r.name) && !state.linked.length) return go("#/connect");
 
   app.classList.toggle("bare", r.name === "connect");
   side.classList.remove("open");
-  const pages = { connect, library, show: showPage, scene: scenePage, upload: uploadPage, edits, about, producer };
+  const pages = { connect, library, show: showPage, scene: scenePage, upload: uploadPage, raw: rawPage, about, producer };
   (pages[r.name] || library)(r);
   renderSide(r);
   window.scrollTo(0, 0);
@@ -67,7 +70,7 @@ window.addEventListener("hashchange", render);
 function renderSide(r) {
   if (r.name === "connect") return (side.innerHTML = "");
   const link = (href, label, on, cls = "") => `<a class="link ${cls} ${on ? "on" : ""}" href="${href}">${esc(label)}</a>`;
-  const top = `<a class="word" href="#/library">uncut<span>.</span></a><button class="menu-btn" id="menuBtn">Menu</button>`;
+  const top = `<a class="word" href="#/library">${LOGO}uncut</a><button class="menu-btn" id="menuBtn">Menu</button>`;
 
   if (r.name === "producer") {
     side.innerHTML = `${top}
@@ -103,25 +106,19 @@ function renderSide(r) {
     side.innerHTML = `${top}
       <div class="group">
         ${link("#/library", "Library", r.name === "library")}
-        ${link("#/edits", "Edits explained", r.name === "edits")}
         ${link("#/about", "About", r.name === "about")}
       </div>
       <div class="group">
         <div class="group-h">Shows</div>
         ${myShows()
           .map((s) => {
-            const here = r.a === s.id && ["show", "scene"].includes(r.name);
+            const here = r.a === s.id && ["show", "scene", "raw"].includes(r.name);
             let html = link("#/show/" + s.id, s.title, here && r.name === "show" && !Number.isInteger(r.b));
             if (here)
               html += s.episodes.map((ep, ei) => link(`#/show/${s.id}/${ei}`, ep.title, r.b === ei, "sub")).join("");
             return html;
           })
           .join("")}
-      </div>
-      <div class="group">
-        <div class="group-h">Linked</div>
-        ${state.linked.map((id) => `<div class="link">${esc(serviceName(id))}</div>`).join("")}
-        <a class="link red" href="#/connect">Link more</a>
       </div>
       <div class="side-foot group">${link("#/producer", "Producer mode", false)}</div>`;
   }
@@ -150,7 +147,7 @@ function connect() {
   main.innerHTML = `
     <div class="connect">
       <div class="connect-art grain">
-        <p>uncut.</p>
+        <p class="word" style="padding:0">${LOGO}uncut</p>
         <div>
           <h1 class="l">Reality TV is edited.<br>See what they cut.</h1>
           <p>Link your streaming apps. Every dating show you watch comes with its raw footage.</p>
@@ -162,7 +159,7 @@ function connect() {
         <div class="list">
           ${SERVICES.map((s) => {
             const on = state.linked.includes(s.id);
-            return `<div class="item"><span>${esc(s.name)}</span>
+            return `<div class="item"><span class="svc">${serviceIcon(s)}${esc(s.name)}</span>
               <button class="btn ${on ? "done" : "soft"}" data-link="${s.id}">${on ? "Linked" : "Link"}</button></div>`;
           }).join("")}
         </div>
@@ -218,6 +215,7 @@ function library() {
     <div class="page">
       <div class="head">
         <div><h1 class="l">Library</h1><p class="muted">From ${esc(from)}</p></div>
+        <a class="btn soft" href="#/connect">Link apps</a>
       </div>
 
       <a class="hero grain" href="#/show/${feat.id}" style="${cover(feat)}">
@@ -243,7 +241,7 @@ function library() {
       </div>
 
       <div class="sec">
-        <div class="sec-h">Scenes that changed the story</div>
+        <div class="sec-h">Aired vs real</div>
         <div class="covers wide">
           ${shows.slice(0, 6).map((s) => sceneCover(s, 0, s.episodes[0].scenes.length - 1)).join("")}
         </div>
@@ -292,7 +290,13 @@ function showPage(r) {
         <div class="sec-h">${esc(ep.title)}</div>
         ${
           ok
-            ? `<div class="covers wide">
+            ? `<a class="hero grain raw-ep" href="#/raw/${show.id}/${ei}" style="${cover(show, 1)}">
+              <p class="muted-w">Every camera, every hour</p>
+              <h2 class="l">Watch the whole episode raw</h2>
+              <p>${ep.rawHours} hours filmed. ${ep.airedMin} minutes aired.</p>
+            </a>
+            <div class="sec-h" style="margin-top:40px">Scenes that look nothing like real life</div>
+            <div class="covers wide">
             ${ep.scenes.map((_, si) => sceneCover(show, ei, si)).join("")}
             ${ups
               .map(
@@ -336,7 +340,6 @@ function scenePage(r) {
     `<div class="seg ${kind}" style="left:${(x.s / T) * 100}%;width:calc(${(x.d / T) * 100}% - 2px)" title="${esc((x.w ? x.w + ": " : "") + x.t)}"></div>`;
 
   const take = state.takes[sc.id] || {};
-  const subject = sc.raw.find(([w]) => show.cast.includes(w))?.[0] || show.cast[0];
   const choice = (q, v, label) => `<button class="choice ${take[q] === v ? "on" : ""}" data-q="${q}" data-v="${v}">${label}</button>`;
 
   main.innerHTML = `
@@ -372,7 +375,6 @@ function scenePage(r) {
         <div class="key">
           <span><i style="background:var(--red)"></i>Aired</span>
           <span><i style="background:repeating-linear-gradient(-45deg,#fde6e6 0 3px,#f8cfcf 3px 6px)"></i>Cut</span>
-          <span><i style="background:var(--red-deep)"></i>Taken from another moment</span>
         </div>
       </div>
 
@@ -400,10 +402,10 @@ function scenePage(r) {
 
       <div class="sec">
         <div class="sec-h">Your take</div>
-        <p>How do you feel about ${esc(subject)} now?</p>
-        <div class="choices">${choice("feel", "more", "Kinder")}${choice("feel", "same", "The same")}${choice("feel", "less", "Harsher")}</div>
-        <p>Did you notice the edit before?</p>
-        <div class="choices">${choice("saw", "yes", "Yes")}${choice("saw", "no", "No")}</div>
+        <p>Did the aired version look real to you?</p>
+        <div class="choices">${choice("saw", "no", "Yes, totally")}${choice("saw", "yes", "Not really")}</div>
+        <p>Does your own dating life feel more normal now?</p>
+        <div class="choices">${choice("feel", "more", "Yes")}${choice("feel", "same", "A bit")}${choice("feel", "less", "No")}</div>
         <p class="red" id="takeMsg">${takeMsg(take)}</p>
       </div>
     </div>`;
@@ -462,7 +464,124 @@ function scenePage(r) {
 
 function takeMsg(t) {
   if (!t.feel || !t.saw) return "";
-  return t.saw === "no" ? "That's how editing works. It's made not to be noticed." : "Good eye. It gets easier every time.";
+  return t.saw === "no"
+    ? "It's made to look real. Real life is slower and more boring, and that's normal."
+    : "Good eye. Real relationships don't come with a soundtrack.";
+}
+
+/* ==========================================================
+   WHOLE EPISODE, RAW
+   ========================================================== */
+function rawPage(r) {
+  const show = showById(r.a);
+  const ei = r.b;
+  const ep = show?.episodes[ei];
+  if (!ep || !isArchived(show, ei, state.uploads) || !state.linked.includes(show.service)) return go("#/library");
+  const cams = Object.keys(CAMERAS);
+  const DAY = 24 * 60; // minutes
+  const START = 8 * 60;
+  /* where the aired scenes were filmed, spread across the day */
+  const marks = ep.scenes
+    .map((_, si) => ({ si, m: (START + 90 + si * 420 + ei * 37) % DAY, sc: sceneFor(show, ei, si) }))
+    .sort((a, b) => a.m - b.m);
+  let cam = 0;
+  let m = START;
+  let line = 0;
+  let playing = true;
+  let fast = false;
+  const clock = (x) => `${String(Math.floor(x / 60) % 24).padStart(2, "0")}:${String(Math.floor(x % 60)).padStart(2, "0")}`;
+
+  main.innerHTML = `
+    <div class="page">
+      <div class="head">
+        <div><p class="muted">${esc(show.title)} · ${esc(ep.title)}</p><h1 class="l">The whole episode, raw</h1></div>
+        <a class="btn soft" href="#/show/${show.id}/${ei}">Back to episode</a>
+      </div>
+
+      <div class="screen raw grain" id="rawScreen">
+        <div class="fill" style="${cover(show)}"></div>
+        <div class="corner"><span class="dot"></span><span id="camName"></span></div>
+        <div class="corner right" id="dayTime"></div>
+        <div class="sub" id="rawLine"></div>
+      </div>
+
+      <div class="choices" id="cams" style="margin-top:16px">
+        ${cams.map((c, i) => `<button class="choice ${i === 0 ? "on" : ""}" data-cam="${i}">${esc(c)}</button>`).join("")}
+      </div>
+
+      <div class="player" style="margin-top:8px">
+        <button class="play" id="play">Pause</button>
+        <div class="track ticks" id="track"><span id="prog" style="width:0"></span>
+          ${marks.map((x) => `<i style="left:${(x.m / DAY) * 100}%" title="${esc(x.sc.title)}"></i>`).join("")}
+        </div>
+        <span class="time" id="clock"></span>
+      </div>
+      <div style="display:flex;gap:8px;margin-top:16px;flex-wrap:wrap">
+        <button class="btn soft" id="fast">Fast forward</button>
+        <button class="btn soft" id="skip">Skip an hour</button>
+      </div>
+
+      <div class="sec">
+        <div class="sec-h">Where the aired scenes came from</div>
+        <div class="list">
+          ${marks
+            .map((x) => `<a class="item" href="#/scene/${show.id}/${ei}/${x.si}"><span>${esc(x.sc.title)}</span><span class="meta">${clock(x.m)} · ${esc(x.sc.cam)}</span></a>`)
+            .join("")}
+        </div>
+        <p class="muted" style="margin-top:16px">Everything else looks like what you just watched. Most of a day in the villa is waiting.</p>
+      </div>
+    </div>`;
+
+  const paint = () => {
+    const pool = CAMERAS[cams[cam]];
+    const [w, x] = pool[line % pool.length];
+    $("#camName").textContent = cams[cam];
+    $("#dayTime").textContent = `Day ${ei * 2 + 1 + Math.floor(m / DAY)} · ${clock(m % DAY)}`;
+    $("#rawLine").innerHTML = w
+      ? `${esc(fill(w, show.cast))}: ${esc(fill(x, show.cast))}`
+      : `<span style="opacity:.8">${esc(fill(x, show.cast))}</span>`;
+    $("#prog").style.width = ((m % DAY) / DAY) * 100 + "%";
+    $("#clock").textContent = `${clock(m % DAY)} / 24:00`;
+  };
+  paint();
+  let ticks = 0;
+  state.timers.push(
+    setInterval(() => {
+      if (!playing) return;
+      m += fast ? 2 : 0.1;
+      if (++ticks % (fast ? 8 : 30) === 0) line++;
+      paint();
+    }, 100)
+  );
+
+  $("#cams").addEventListener("click", (e) => {
+    const b = e.target.closest("[data-cam]");
+    if (!b) return;
+    cam = +b.dataset.cam;
+    line = 0;
+    $$("[data-cam]").forEach((x) => x.classList.toggle("on", x === b));
+    paint();
+  });
+  $("#play").addEventListener("click", () => {
+    playing = !playing;
+    $("#play").textContent = playing ? "Pause" : "Play";
+    $("#rawScreen").classList.toggle("paused", !playing);
+  });
+  $("#fast").addEventListener("click", () => {
+    fast = !fast;
+    $("#fast").textContent = fast ? "Normal speed" : "Fast forward";
+  });
+  $("#skip").addEventListener("click", () => {
+    m += 60;
+    line++;
+    paint();
+  });
+  $("#track").addEventListener("click", (e) => {
+    const b = e.currentTarget.getBoundingClientRect();
+    m = Math.floor(m / DAY) * DAY + ((e.clientX - b.left) / b.width) * DAY;
+    line++;
+    paint();
+  });
 }
 
 /* ==========================================================
@@ -502,30 +621,8 @@ function uploadPage(r) {
 }
 
 /* ==========================================================
-   EDITS EXPLAINED + ABOUT
+   ABOUT
    ========================================================== */
-function edits() {
-  const example = (name) => {
-    for (const s of myShows())
-      for (let ei = 0; ei < s.episodes.length; ei++)
-        if (isArchived(s, ei, state.uploads))
-          for (let si = 0; si < s.episodes[ei].scenes.length; si++)
-            if (sceneFor(s, ei, si).edits.includes(name)) return `#/scene/${s.id}/${ei}/${si}`;
-  };
-  main.innerHTML = `
-    <div class="page">
-      <div class="head"><div><h1 class="l">Edits explained</h1><p class="muted">Learn the tricks once, spot them everywhere.</p></div></div>
-      <div class="list gloss">
-        ${Object.entries(EDITS)
-          .map(([k, v]) => {
-            const ex = example(k);
-            return `<div class="item"><span>${esc(k)}</span><span class="muted">${esc(v)}</span>${ex ? `<a class="text-btn" href="${ex}">See it</a>` : "<span></span>"}</div>`;
-          })
-          .join("")}
-      </div>
-    </div>`;
-}
-
 function about() {
   main.innerHTML = `
     <div class="page">

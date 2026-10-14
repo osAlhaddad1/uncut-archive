@@ -144,8 +144,20 @@ p {
 }
 
 .word {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
   padding: 0 8px;
   letter-spacing: -0.01em;
+}
+
+.logo {
+  color: var(--red);
+  flex: none;
+}
+
+.connect-art .logo {
+  color: #fff;
 }
 
 .word span {
@@ -717,6 +729,60 @@ button.item:hover {
 
 .connect-list .list {
   margin: 32px 0;
+}
+
+.svc {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.svc-ico {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  display: grid;
+  place-items: center;
+  background: var(--text);
+  color: #fff;
+}
+
+/* whole raw episode */
+.raw-ep {
+  min-height: 220px;
+  filter: grayscale(0.75) brightness(0.85);
+  transition: filter 0.4s var(--ease);
+}
+
+.raw-ep:hover {
+  filter: grayscale(0.2) brightness(0.95);
+}
+
+.muted-w {
+  opacity: 0.75;
+}
+
+.screen .corner.right {
+  left: auto;
+  right: 14px;
+}
+
+.track.ticks {
+  position: relative;
+  overflow: visible;
+}
+
+.track.ticks > span {
+  border-radius: 2px;
+}
+
+.track.ticks i {
+  position: absolute;
+  top: -5px;
+  width: 2px;
+  height: 14px;
+  border-radius: 1px;
+  background: var(--red-deep);
 }
 
 /* ---------- producer ---------- */
