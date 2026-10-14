@@ -1,411 +1,730 @@
 /* ==========================================================
-   UNCUT — shared runtime: nav, reveals, icons, data, storage
+   UNCUT — app
    ========================================================== */
 
-/* ---------- ultra-light line icons ---------- */
-const I = (d, s = 18, w = 1.25) =>
-  `<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="${w}" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${d}</svg>`;
-
-const ICONS = {
-  arrow: (s) => I('<path d="M7 17 17 7M8 7h9v9"/>', s),
-  right: (s) => I('<path d="M5 12h14M13 6l6 6-6 6"/>', s),
-  play: (s) => I('<path d="M8 5.5v13l10.5-6.5z"/>', s),
-  close: (s) => I('<path d="M6 6l12 12M18 6 6 18"/>', s),
-  upload: (s) => I('<path d="M12 16V4M7 9l5-5 5 5M4 16v2.5A1.5 1.5 0 0 0 5.5 20h13a1.5 1.5 0 0 0 1.5-1.5V16"/>', s),
-  film: (s) =>
-    I('<rect x="3" y="4" width="18" height="16" rx="3"/><path d="M7 4v16M17 4v16M3 9h4M3 15h4M17 9h4M17 15h4"/>', s),
-  scissors: (s) =>
-    I('<circle cx="6" cy="7" r="2.5"/><circle cx="6" cy="17" r="2.5"/><path d="M8 8.5 20 18M8 15.5 20 6"/>', s),
-  eye: (s) => I('<path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12z"/><circle cx="12" cy="12" r="2.8"/>', s),
-  shield: (s) => I('<path d="M12 3 4.5 6v5.5c0 4.5 3.2 8.2 7.5 9.5 4.3-1.3 7.5-5 7.5-9.5V6z"/><path d="m9 12 2.2 2.2L15.5 10"/>', s),
-  check: (s) => I('<path d="m5 12.5 4.5 4.5L19 7.5"/>', s, 2),
-  link: (s) => I('<path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1"/><path d="M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1"/>', s),
-  search: (s) => I('<circle cx="11" cy="11" r="6.5"/><path d="m20 20-4.2-4.2"/>', s),
-  heart: (s) => I('<path d="M12 20s-7.5-4.6-7.5-10.2A4.3 4.3 0 0 1 12 7.2a4.3 4.3 0 0 1 7.5 2.6C19.5 15.4 12 20 12 20z"/>', s),
-  mirror: (s) => I('<ellipse cx="12" cy="10" rx="6" ry="7.5"/><path d="M12 17.5V21M8.5 21h7M9.5 6.5c.8-.7 1.6-1 2.5-1"/>', s),
-  mic: (s) => I('<rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5.5 11a6.5 6.5 0 0 0 13 0M12 17.5V21"/>', s),
-  clock: (s) => I('<circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/>', s),
-  trash: (s) => I('<path d="M5 7h14M10 7V5h4v2M7 7l1 13h8l1-13"/>', s),
-  lock: (s) => I('<rect x="5" y="10.5" width="14" height="9.5" rx="2.5"/><path d="M8.5 10.5V8a3.5 3.5 0 0 1 7 0v2.5"/>', s),
-  layers: (s) => I('<path d="m12 4 8.5 4.5L12 13 3.5 8.5z"/><path d="m3.5 12.5 8.5 4.5 8.5-4.5M3.5 16.5 12 21l8.5-4.5"/>', s),
-  logout: (s) => I('<path d="M14 4h4.5A1.5 1.5 0 0 1 20 5.5v13a1.5 1.5 0 0 1-1.5 1.5H14M10 16l-4-4 4-4M6 12h10"/>', s),
+const state = {
+  linked: store.get("linked", []),
+  studio: store.get("studio", "golden"),
+  takes: store.get("takes", {}),
+  uploads: [],
+  pending: [],
+  timers: [],
+  urls: [],
 };
 
-/* ---------- nav: island + morphing burger ---------- */
-function mountNav(active) {
-  const links = [
-    ["index.html", "The idea"],
-    ["watch.html", "Watch uncut"],
-    ["portal.html", "Producer portal"],
-  ];
-  const nav = document.createElement("div");
-  nav.innerHTML = `
-    <nav class="nav" aria-label="Main">
-      <a class="brand" href="index.html"><span class="brand-dot"></span>Uncut</a>
-      <div class="nav-links">
-        ${links.map(([h, t]) => `<a href="${h}" ${active === h ? 'aria-current="page"' : ""}>${t}</a>`).join("")}
-      </div>
-      <a class="btn sm nav-cta" href="watch.html">Open archive <span class="ico">${ICONS.arrow(14)}</span></a>
-      <button class="burger" aria-label="Open menu" aria-expanded="false"><span></span><span></span></button>
-    </nav>
-    <div class="overlay" aria-hidden="true">
-      ${links.map(([h, t]) => `<a href="${h}"><span>${t}</span></a>`).join("")}
-      <a href="index.html#why"><span>Why it matters</span></a>
-    </div>`;
-  document.body.prepend(...nav.children);
-  const burger = document.querySelector(".burger");
-  burger.addEventListener("click", () => {
-    const open = document.body.classList.toggle("menu-open");
-    burger.setAttribute("aria-expanded", open);
-    burger.setAttribute("aria-label", open ? "Close menu" : "Open menu");
-  });
-  document.querySelectorAll(".overlay a").forEach((a) =>
-    a.addEventListener("click", () => document.body.classList.remove("menu-open"))
-  );
+const app = $("#app");
+const side = $("#side");
+const main = $("#main");
+
+function go(hash) {
+  if (location.hash === hash) render();
+  else location.hash = hash;
 }
 
-/* ---------- scroll reveals (IntersectionObserver only) ---------- */
-let revealObserver;
-function observeReveals(root = document) {
-  if (!revealObserver) {
-    revealObserver = new IntersectionObserver(
-      (entries) =>
-        entries.forEach((e) => {
-          if (e.isIntersecting) {
-            e.target.classList.add("in");
-            revealObserver.unobserve(e.target);
-          }
-        }),
-      { threshold: 0.12, rootMargin: "0px 0px -40px 0px" }
-    );
-  }
-  root.querySelectorAll(".reveal:not(.in)").forEach((el) => revealObserver.observe(el));
-}
-
-/* ---------- toast ---------- */
 function toast(msg) {
-  let t = document.querySelector(".toast");
+  let t = $(".toast");
   if (!t) {
     t = document.createElement("div");
     t.className = "toast";
     t.setAttribute("role", "status");
     document.body.append(t);
   }
-  t.innerHTML = `<span>${msg}</span><span class="ico">${ICONS.check(14)}</span>`;
+  t.textContent = msg;
   requestAnimationFrame(() => t.classList.add("on"));
   clearTimeout(t._h);
-  t._h = setTimeout(() => t.classList.remove("on"), 3400);
+  t._h = setTimeout(() => t.classList.remove("on"), 2800);
 }
 
-/* ---------- helpers ---------- */
-const $ = (s, r = document) => r.querySelector(s);
-const $$ = (s, r = document) => [...r.querySelectorAll(s)];
-const esc = (s) =>
-  String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
-const fmtBytes = (b) => {
-  if (b < 1024) return b + " B";
-  const u = ["KB", "MB", "GB", "TB"];
-  let i = -1;
-  do {
-    b /= 1024;
-    i++;
-  } while (b >= 1024 && i < u.length - 1);
-  return b.toFixed(b < 10 ? 1 : 0) + " " + u[i];
-};
-const fmtDate = (ts) =>
-  new Date(ts).toLocaleString(undefined, { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
-
-/* ==========================================================
-   DATA — fictional shows, studios and streaming services.
-   Numbers are illustrative, not measured.
-   ========================================================== */
-const STUDIOS = {
-  golden: { name: "Golden Hour Productions", short: "GH" },
-  northlight: { name: "Northlight Studios", short: "NS" },
-  tidewater: { name: "Tidewater Media", short: "TM" },
-};
-
-const FLAG_INFO = {
-  "Producer prompt": "Someone off-camera asked for this line, or asked for it to be said again.",
-  Frankenbite: "Words from different sentences were spliced together into one line.",
-  "Reaction moved": "A reaction shot was taken from a different moment and placed here.",
-  Reordered: "Events are shown in a different order than they happened.",
-  "Context cut": "The surrounding conversation that changes the meaning was removed.",
-  "Music added": "Score was added to steer how the moment feels.",
-  "Glam & lighting": "Hair, make-up, lighting and filters that shaped how people look.",
-  "Slow motion": "Footage was slowed down to make a moment feel bigger.",
-};
-
-/* transcript templates — {A}{B}{C}{D} become cast names per show */
-const SCENE_TEMPLATES = [
-  {
-    key: "firepit",
-    title: "Fire-pit: “I'm not here for {B}”",
-    flags: ["Context cut", "Producer prompt", "Music added"],
-    cam: "CAM 07 · Fire-pit wide",
-    aired: [
-      ["{A}", "Honestly? I'm not here for {B}."],
-      ["", "[cut to {B} looking away · tense strings]"],
-    ],
-    raw: [
-      ["{C}", "Do you think {B} is getting in the way of you and {D}?", 0],
-      ["{A}", "Honestly? I'm not here for {B}…", 1],
-      ["{A}", "…'s approval, I'm here for me. But I love her. She's been the kindest person in here.", 0],
-      ["Producer (off-cam)", "Can you say the first part again, just that bit?", 0],
-      ["{A}", "Why? I don't want it to sound mean.", 0],
-      ["{B}", "(laughing) Babe, I'm literally right here, it's fine.", 0],
-    ],
-    note: "The aired line ends mid-sentence. In the raw footage the next words reverse the meaning, and the off-camera request to repeat the line is visible.",
-  },
-  {
-    key: "frankenbite",
-    title: "Confessional: “I'd never trust him”",
-    flags: ["Frankenbite", "Reordered"],
-    cam: "CAM 02 · Beach hut",
-    aired: [["{C}", "I'd never… trust him."]],
-    raw: [
-      ["Producer (off-cam)", "Would you ever go back to {D}?", 0],
-      ["{C}", "I'd never…", 1],
-      ["{C}", "…say never, I think he's a sweetheart. Would I trust him with my phone? No. Would I trust him with my dog? Yeah.", 0],
-      ["{C}", "Trust him? Yeah. With the important stuff, yeah.", 1],
-    ],
-    note: "Two fragments recorded 40 seconds apart were joined. Together they say the opposite of what she actually said.",
-  },
-  {
-    key: "eyeroll",
-    title: "Recoupling: the eye-roll",
-    flags: ["Reaction moved", "Reordered", "Music added"],
-    cam: "CAM 11 · Fire-pit close-up",
-    aired: [
-      ["{D}", "I've never felt like this about anyone before."],
-      ["", "[close-up: {B} rolls her eyes · record scratch]"],
-    ],
-    raw: [
-      ["{D}", "I've never felt like this about anyone before.", 1],
-      ["{B}", "(smiling, wiping tears) That's so sweet. I'm actually so happy for you two.", 0],
-      ["", "[ 2 hrs 14 min earlier, by the pool — CAM 04 ]", 0],
-      ["{B}", "(eye-roll) A seagull just took my entire wrap. The whole thing.", 2],
-    ],
-    note: "The eye-roll in the episode was filmed over two hours earlier, about a seagull. Her real reaction at the recoupling was supportive.",
-  },
-  {
-    key: "glam",
-    title: "Morning: “just woke up like this”",
-    flags: ["Glam & lighting", "Slow motion", "Music added"],
-    cam: "CAM 03 · Dressing room",
-    aired: [
-      ["", "[slow-motion: {A} and {B} walk out to the pool, golden light]"],
-      ["{A}", "Morning, villa!"],
-    ],
-    raw: [
-      ["", "[06:40 — hair & make-up team arrives: 4 artists, 2 ring lights]", 0],
-      ["{B}", "Can we do the lashes again? My eyes are so puffy, I slept like two hours.", 0],
-      ["{A}", "Nobody looks like this in the morning, this is so funny.", 0],
-      ["", "[08:15 — lighting crew re-rigs the pool reflector]", 0],
-      ["{A}", "Morning, villa!", 1],
-      ["Producer (off-cam)", "Love it — once more, a bit slower, and look at each other.", 0],
-    ],
-    note: "The ‘natural morning’ took around 95 minutes of hair, make-up and lighting, and three takes of the walk-out.",
-  },
-  {
-    key: "dumped",
-    title: "The dumping: “she didn't even care”",
-    flags: ["Context cut", "Reaction moved"],
-    cam: "CAM 09 · Driveway",
-    aired: [
-      ["{C}", "Yeah. Bye then."],
-      ["", "[{C} turns away · cut to taxi]"],
-    ],
-    raw: [
-      ["{D}", "I'm gonna miss you so much.", 0],
-      ["{C}", "(crying) Stop, you'll make me ugly-cry on national TV.", 0],
-      ["{C}", "Look after {A} for me, yeah? Promise.", 0],
-      ["{C}", "Yeah. Bye then.", 1],
-      ["{C}", "(walking back) Wait, one more hug.", 0],
-    ],
-    note: "Everything emotional before and after the goodbye was cut, so a tearful exit read as cold.",
-  },
-];
-
-const SHOWS = [
-  {
-    id: "villa-amour",
-    title: "Villa Amour",
-    season: 4,
-    service: "Velvet+",
-    studio: "golden",
-    tagline: "Twelve singles. One villa. Eight weeks of sunshine and recouplings.",
-    cast: ["Mia", "Jade", "Sofia", "Kai"],
-    art: ["#e7a58f", "#c06a5c", "#f7d7b4", "#5c2e2a"],
-    featured: true,
-    episodes: [
-      { n: 1, title: "Arrivals", airedMin: 47, rawHours: 212, archived: true, scenes: ["glam", "firepit"] },
-      { n: 2, title: "The First Recoupling", airedMin: 52, rawHours: 236, archived: true, scenes: ["eyeroll", "frankenbite"] },
-      { n: 3, title: "Heads Turned", airedMin: 49, rawHours: 228, archived: true, scenes: ["dumped", "firepit"] },
-      { n: 4, title: "Text Bomb", airedMin: 51, rawHours: 241, archived: false, scenes: ["frankenbite"] },
-    ],
-  },
-  {
-    id: "blind-hearts",
-    title: "Blind Hearts",
-    season: 2,
-    service: "Lumen TV",
-    studio: "northlight",
-    tagline: "They fall in love through a wall. Then they meet.",
-    cast: ["Nora", "Ella", "Priya", "Jonah"],
-    art: ["#b9c4d8", "#6d7aa0", "#efe4f0", "#2b2d48"],
-    episodes: [
-      { n: 1, title: "The Pods", airedMin: 55, rawHours: 168, archived: true, scenes: ["frankenbite", "glam"] },
-      { n: 2, title: "Say It First", airedMin: 53, rawHours: 174, archived: true, scenes: ["firepit"] },
-      { n: 3, title: "The Reveal", airedMin: 58, rawHours: 190, archived: false, scenes: ["eyeroll"] },
-    ],
-  },
-  {
-    id: "paradise-pact",
-    title: "Paradise Pact",
-    season: 6,
-    service: "Velvet+",
-    studio: "golden",
-    tagline: "Couples arrive together. Temptation arrives by boat.",
-    cast: ["Lena", "Amara", "Chloe", "Dev"],
-    art: ["#9fc7b8", "#3d7a72", "#f2e6c9", "#1d3b3a"],
-    episodes: [
-      { n: 1, title: "Welcome to Paradise", airedMin: 44, rawHours: 198, archived: true, scenes: ["glam", "eyeroll"] },
-      { n: 2, title: "Bonfire", airedMin: 46, rawHours: 203, archived: false, scenes: ["firepit"] },
-    ],
-  },
-  {
-    id: "second-glance",
-    title: "Second Glance",
-    season: 1,
-    service: "Streamly",
-    studio: "tidewater",
-    tagline: "Exes move back in together for thirty days.",
-    cast: ["Isla", "Rosa", "Yara", "Ben"],
-    art: ["#e6c3d1", "#a35d7d", "#fbefe6", "#4a2236"],
-    episodes: [
-      { n: 1, title: "Moving Back In", airedMin: 42, rawHours: 140, archived: true, scenes: ["dumped", "frankenbite"] },
-      { n: 2, title: "House Rules", airedMin: 44, rawHours: 151, archived: true, scenes: ["eyeroll"] },
-      { n: 3, title: "Old Habits", airedMin: 43, rawHours: 147, archived: false, scenes: ["glam"] },
-    ],
-  },
-  {
-    id: "proposal-house",
-    title: "The Proposal House",
-    season: 3,
-    service: "Lumen TV",
-    studio: "northlight",
-    tagline: "Ten couples. One ring each. Not everyone says yes.",
-    cast: ["Hana", "Zoe", "Maya", "Leo"],
-    art: ["#e8d2a6", "#b0894a", "#fff4e0", "#4b3820"],
-    episodes: [
-      { n: 1, title: "The Ring Box", airedMin: 50, rawHours: 182, archived: true, scenes: ["firepit", "dumped"] },
-      { n: 2, title: "Meet the Parents", airedMin: 48, rawHours: 177, archived: false, scenes: ["frankenbite"] },
-    ],
-  },
-];
-
-function fill(str, cast) {
-  return String(str).replace(/\{([ABCD])\}/g, (_, k) => cast["ABCD".indexOf(k)]);
+/* ---------- routing ---------- */
+function route() {
+  const [name = "", a, b, c] = location.hash.replace(/^#\/?/, "").split("/");
+  return { name: name || (state.linked.length ? "library" : "connect"), a, b: b && +b, c: c && +c };
 }
 
-function sceneFor(show, key, idx, ep) {
-  const t = SCENE_TEMPLATES.find((s) => s.key === key);
-  const c = show.cast;
-  const base = 7 + idx * 19 + ep.n;
-  return {
-    id: `${show.id}-e${ep.n}-${key}`,
-    title: fill(t.title, c),
-    flags: t.flags,
-    cam: t.cam,
-    airedAt: `${String(base).padStart(2, "0")}:${String((ep.n * 13 + idx * 7) % 60).padStart(2, "0")}`,
-    rawAt: `Day ${ep.n * 2 + idx} · ${String(10 + ((idx * 5 + ep.n) % 12)).padStart(2, "0")}:${String((ep.n * 17) % 60).padStart(2, "0")}`,
-    aired: t.aired.map(([w, x]) => [fill(w, c), fill(x, c)]),
-    raw: t.raw.map(([w, x, a]) => [fill(w, c), fill(x, c), a]),
-    note: fill(t.note, c),
-  };
+const myShows = () => SHOWS.filter((s) => state.linked.includes(s.service));
+const showById = (id) => SHOWS.find((s) => s.id === id);
+
+function render() {
+  state.timers.forEach(clearInterval);
+  state.timers = [];
+  state.urls.splice(0).forEach((u) => URL.revokeObjectURL(u));
+
+  const r = route();
+  const open = ["connect", "producer", "about", "edits"];
+  if (!open.includes(r.name) && !state.linked.length) return go("#/connect");
+
+  app.classList.toggle("bare", r.name === "connect");
+  side.classList.remove("open");
+  const pages = { connect, library, show: showPage, scene: scenePage, upload: uploadPage, edits, about, producer };
+  (pages[r.name] || library)(r);
+  renderSide(r);
+  window.scrollTo(0, 0);
 }
 
-function posterArt(show) {
-  const [a, b, c, d] = show.art;
-  return `
-    background:
-      radial-gradient(circle at 72% 30%, ${c} 0 11%, transparent 11.5%),
-      radial-gradient(ellipse 120% 60% at 50% 105%, ${d} 0 40%, transparent 41%),
-      radial-gradient(ellipse 140% 50% at 30% 92%, ${b} 0 45%, transparent 46%),
-      linear-gradient(180deg, ${a} 0%, ${b} 70%, ${d} 100%);`;
-}
+window.addEventListener("hashchange", render);
 
-/* ==========================================================
-   STORAGE — IndexedDB (uploads keep the actual file blob)
-   Everything stays in this browser: it's a working prototype.
-   ========================================================== */
-const DB_NAME = "uncut-archive";
-const DB_VER = 1;
+/* ---------- sidebar ---------- */
+function renderSide(r) {
+  if (r.name === "connect") return (side.innerHTML = "");
+  const link = (href, label, on, cls = "") => `<a class="link ${cls} ${on ? "on" : ""}" href="${href}">${esc(label)}</a>`;
+  const top = `<a class="word" href="#/library">uncut<span>.</span></a><button class="menu-btn" id="menuBtn">Menu</button>`;
 
-function openDB() {
-  return new Promise((res, rej) => {
-    const req = indexedDB.open(DB_NAME, DB_VER);
-    req.onupgradeneeded = () => {
-      const db = req.result;
-      if (!db.objectStoreNames.contains("uploads")) {
-        const s = db.createObjectStore("uploads", { keyPath: "id" });
-        s.createIndex("show", "showId");
-      }
-    };
-    req.onsuccess = () => res(req.result);
-    req.onerror = () => rej(req.error);
+  if (r.name === "producer") {
+    side.innerHTML = `${top}
+      <div class="group">
+        <div class="group-h">Signed in as</div>
+        <select class="in" id="studioSel" aria-label="Production company">${Object.entries(STUDIOS)
+          .map(([k, v]) => `<option value="${k}" ${k === state.studio ? "selected" : ""}>${esc(v)}</option>`)
+          .join("")}</select>
+      </div>
+      <div class="group">
+        <div class="group-h">Your shows</div>
+        ${SHOWS.filter((s) => s.studio === state.studio)
+          .map((s) => `<div class="link">${esc(s.title)}</div>`)
+          .join("")}
+      </div>
+      <div class="side-foot group">
+        ${link("#/library", "Back to watching", false)}
+        <button class="link muted" id="clearDemo">Clear demo uploads</button>
+      </div>`;
+    $("#studioSel").addEventListener("change", (e) => {
+      state.studio = e.target.value;
+      store.set("studio", state.studio);
+      render();
+    });
+    $("#clearDemo").addEventListener("click", async () => {
+      if (!confirm("Remove all demo uploads stored in this browser?")) return;
+      await dbClear();
+      state.uploads = [];
+      render();
+      toast("Demo uploads cleared");
+    });
+  } else {
+    side.innerHTML = `${top}
+      <div class="group">
+        ${link("#/library", "Library", r.name === "library")}
+        ${link("#/edits", "Edits explained", r.name === "edits")}
+        ${link("#/about", "About", r.name === "about")}
+      </div>
+      <div class="group">
+        <div class="group-h">Shows</div>
+        ${myShows()
+          .map((s) => {
+            const here = r.a === s.id && ["show", "scene"].includes(r.name);
+            let html = link("#/show/" + s.id, s.title, here && r.name === "show" && !Number.isInteger(r.b));
+            if (here)
+              html += s.episodes.map((ep, ei) => link(`#/show/${s.id}/${ei}`, ep.title, r.b === ei, "sub")).join("");
+            return html;
+          })
+          .join("")}
+      </div>
+      <div class="group">
+        <div class="group-h">Linked</div>
+        ${state.linked.map((id) => `<div class="link">${esc(serviceName(id))}</div>`).join("")}
+        <a class="link red" href="#/connect">Link more</a>
+      </div>
+      <div class="side-foot group">${link("#/producer", "Producer mode", false)}</div>`;
+  }
+  $("#menuBtn").addEventListener("click", () => {
+    side.classList.toggle("open");
+    $("#menuBtn").textContent = side.classList.contains("open") ? "Close" : "Menu";
   });
 }
 
-async function dbAll() {
+/* ---------- shared ---------- */
+const share = (ep) => (ep.airedMin / (ep.rawHours * 60)) * 100;
+
+const sceneCover = (show, ei, si) => {
+  const sc = sceneFor(show, ei, si);
+  return `
+    <a class="cov" href="#/scene/${show.id}/${ei}/${si}">
+      <div class="art wide grain" style="${cover(show, si + 2)}"><p class="l">${esc(sc.title)}</p></div>
+      <div class="cap"><p>${esc(show.title)}</p><p class="muted">${esc(sc.edits.join(", "))}</p></div>
+    </a>`;
+};
+
+/* ==========================================================
+   CONNECT (mockup)
+   ========================================================== */
+function connect() {
+  main.innerHTML = `
+    <div class="connect">
+      <div class="connect-art grain">
+        <p>uncut.</p>
+        <div>
+          <h1 class="l">Reality TV is edited.<br>See what they cut.</h1>
+          <p>Link your streaming apps. Every dating show you watch comes with its raw footage.</p>
+        </div>
+        <p>A student prototype</p>
+      </div>
+      <div class="connect-list">
+        <h2 class="l">Link your apps</h2>
+        <div class="list">
+          ${SERVICES.map((s) => {
+            const on = state.linked.includes(s.id);
+            return `<div class="item"><span>${esc(s.name)}</span>
+              <button class="btn ${on ? "done" : "soft"}" data-link="${s.id}">${on ? "Linked" : "Link"}</button></div>`;
+          }).join("")}
+        </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <button class="btn" id="openLib" ${state.linked.length ? "" : "disabled"}>Open library</button>
+          <button class="btn soft" id="linkAll">Link all</button>
+        </div>
+        <p class="muted" style="margin-top:24px">Mockup only. Nothing is actually linked and no login is asked for.</p>
+      </div>
+    </div>`;
+
+  const save = () => {
+    store.set("linked", state.linked);
+    $("#openLib").disabled = !state.linked.length;
+  };
+
+  const link = (btn, fast) => {
+    const id = btn.dataset.link;
+    if (state.linked.includes(id)) {
+      state.linked = state.linked.filter((x) => x !== id);
+      btn.className = "btn soft";
+      btn.textContent = "Link";
+      return save();
+    }
+    btn.className = "btn";
+    btn.textContent = "Linking…";
+    setTimeout(() => {
+      if (!state.linked.includes(id)) state.linked.push(id);
+      btn.className = "btn done";
+      btn.textContent = "Linked";
+      save();
+    }, fast ? 350 : 900 + Math.random() * 500);
+  };
+
+  $$("[data-link]").forEach((b) => b.addEventListener("click", () => link(b)));
+  $("#linkAll").addEventListener("click", () =>
+    $$("[data-link]").forEach((b, i) => !state.linked.includes(b.dataset.link) && setTimeout(() => link(b, true), i * 150))
+  );
+  $("#openLib").addEventListener("click", () => go("#/library"));
+}
+
+/* ==========================================================
+   LIBRARY
+   ========================================================== */
+function library() {
+  const shows = myShows();
+  const feat = shows[0];
+  const featShare = feat.episodes.reduce((t, e) => t + share(e), 0) / feat.episodes.length;
+  const names = state.linked.map(serviceName);
+  const from = names.length > 1 ? names.slice(0, -1).join(", ") + " and " + names.at(-1) : names[0];
+
+  main.innerHTML = `
+    <div class="page">
+      <div class="head">
+        <div><h1 class="l">Library</h1><p class="muted">From ${esc(from)}</p></div>
+      </div>
+
+      <a class="hero grain" href="#/show/${feat.id}" style="${cover(feat)}">
+        <p>${esc(serviceName(feat.service))}</p>
+        <h2 class="l">${esc(feat.title)}</h2>
+        <p>You saw ${featShare.toFixed(2)}% of what was filmed.</p>
+        <span class="btn white">Watch uncut</span>
+      </a>
+
+      <div class="sec">
+        <div class="sec-h">Your shows</div>
+        <div class="covers">
+          ${shows
+            .map(
+              (s) => `
+            <a class="cov" href="#/show/${s.id}">
+              <div class="art grain" style="${cover(s)}"><p class="l">${esc(s.title)}</p></div>
+              <div class="cap"><p class="muted">${esc(serviceName(s.service))}</p></div>
+            </a>`
+            )
+            .join("")}
+        </div>
+      </div>
+
+      <div class="sec">
+        <div class="sec-h">Scenes that changed the story</div>
+        <div class="covers wide">
+          ${shows.slice(0, 6).map((s) => sceneCover(s, 0, s.episodes[0].scenes.length - 1)).join("")}
+        </div>
+      </div>
+    </div>`;
+}
+
+/* ==========================================================
+   SHOW
+   ========================================================== */
+function showPage(r) {
+  const show = showById(r.a);
+  if (!show || !state.linked.includes(show.service)) return go("#/library");
+  const firstOpen = show.episodes.findIndex((_, i) => isArchived(show, i, state.uploads));
+  const ei = Number.isInteger(r.b) && show.episodes[r.b] ? r.b : Math.max(firstOpen, 0);
+  const ep = show.episodes[ei];
+  const ok = isArchived(show, ei, state.uploads);
+  const ups = state.uploads.filter((u) => u.showId === show.id && u.episode === ei);
+
+  main.innerHTML = `
+    <div class="page">
+      <div class="hero grain" style="${cover(show)}">
+        <p>${esc(serviceName(show.service))}</p>
+        <h1 class="l">${esc(show.title)}</h1>
+        <p>${esc(show.tagline)}</p>
+      </div>
+
+      <div class="sec">
+        <div class="sec-h">Episodes</div>
+        <div class="list">
+          ${show.episodes
+            .map((e, i) => {
+              const a = isArchived(show, i, state.uploads);
+              return `<a class="item ${i === ei ? "on" : ""}" href="#/show/${show.id}/${i}">
+                <span>${esc(e.title)}</span>
+                <span style="display:flex;gap:16px;align-items:center;flex-wrap:wrap">
+                  <span class="meta">${e.airedMin} min aired of ${e.rawHours} h filmed</span>
+                  <span class="tag ${a ? "red" : ""}">${a ? "Uncut" : "Due"}</span>
+                </span></a>`;
+            })
+            .join("")}
+        </div>
+      </div>
+
+      <div class="sec">
+        <div class="sec-h">${esc(ep.title)}</div>
+        ${
+          ok
+            ? `<div class="covers wide">
+            ${ep.scenes.map((_, si) => sceneCover(show, ei, si)).join("")}
+            ${ups
+              .map(
+                (u) => `<a class="cov" href="#/upload/${u.id}">
+                <div class="art wide grain" style="${cover(show, 3)};filter:grayscale(.6)"><p class="l">Raw footage</p></div>
+                <div class="cap"><p>${esc(u.camera || u.fileName)}</p><p class="muted">Uploaded by the producer</p></div></a>`
+              )
+              .join("")}
+          </div>`
+            : `<p class="muted">The producer hasn't uploaded this episode yet. They have 72 hours after it airs.</p>`
+        }
+      </div>
+    </div>`;
+}
+
+/* ==========================================================
+   SCENE
+   ========================================================== */
+function scenePage(r) {
+  const show = showById(r.a);
+  const ep = show?.episodes[r.b];
+  if (!ep || ep.scenes[r.c] === undefined || !state.linked.includes(show.service)) return go("#/library");
+  const sc = sceneFor(show, r.b, r.c);
+  const nextHref = ep.scenes[r.c + 1] !== undefined ? `#/scene/${show.id}/${r.b}/${r.c + 1}` : null;
+
+  /* each raw line takes time relative to its length */
+  let T = 0;
+  const raw = sc.raw.map(([w, t, a]) => {
+    const d = Math.max(2.4, t.length * 0.055);
+    const seg = { w, t, a, s: T, d };
+    T += d;
+    return seg;
+  });
+  let A = 0;
+  const aired = [...raw.filter((x) => x.a === 1), ...raw.filter((x) => x.a === 2)].map((x) => {
+    const seg = { ...x, s: A };
+    A += x.d;
+    return seg;
+  });
+  const seg = (x, kind) =>
+    `<div class="seg ${kind}" style="left:${(x.s / T) * 100}%;width:calc(${(x.d / T) * 100}% - 2px)" title="${esc((x.w ? x.w + ": " : "") + x.t)}"></div>`;
+
+  const take = state.takes[sc.id] || {};
+  const subject = sc.raw.find(([w]) => show.cast.includes(w))?.[0] || show.cast[0];
+  const choice = (q, v, label) => `<button class="choice ${take[q] === v ? "on" : ""}" data-q="${q}" data-v="${v}">${label}</button>`;
+
+  main.innerHTML = `
+    <div class="page">
+      <div class="head">
+        <div><p class="muted">${esc(show.title)} · ${esc(ep.title)}</p><h1 class="l">${esc(sc.title)}</h1></div>
+        <a class="btn soft" href="${nextHref || `#/show/${show.id}/${r.b}`}">${nextHref ? "Next scene" : "Back to episode"}</a>
+      </div>
+
+      <div class="compare" id="screens">
+        <div>
+          <div class="screen grain" id="airedScreen"><div class="fill" style="${cover(show)}"></div><div class="sub" id="airedSub"></div></div>
+          <div class="screen-cap"><span>As aired</span><span class="muted">${esc(serviceName(show.service))}</span></div>
+        </div>
+        <div>
+          <div class="screen raw grain"><div class="fill" style="${cover(show)}"></div><div class="corner"><span class="dot"></span>Raw</div><div class="sub" id="rawSub"></div></div>
+          <div class="screen-cap"><span>Raw footage</span><span class="muted">${esc(sc.cam)}</span></div>
+        </div>
+      </div>
+
+      <div class="player">
+        <button class="play" id="play">Pause</button>
+        <div class="track" id="track"><span id="prog" style="width:0"></span></div>
+        <span class="time" id="clock"></span>
+      </div>
+
+      <div class="sec">
+        <div class="sec-h">Timeline</div>
+        <div class="lanes">
+          <div class="lane-row"><span class="muted">Filmed</span><div class="lane">${raw.map((x) => seg(x, ["cut", "kept", "moved"][x.a])).join("")}<div class="head-line" id="h1"></div></div></div>
+          <div class="lane-row"><span class="muted">Aired</span><div class="lane">${aired.map((x) => seg(x, x.a === 2 ? "moved" : "kept")).join("")}<div class="head-line" id="h2"></div></div></div>
+        </div>
+        <div class="key">
+          <span><i style="background:var(--red)"></i>Aired</span>
+          <span><i style="background:repeating-linear-gradient(-45deg,#fde6e6 0 3px,#f8cfcf 3px 6px)"></i>Cut</span>
+          <span><i style="background:var(--red-deep)"></i>Taken from another moment</span>
+        </div>
+      </div>
+
+      <div class="sec cols">
+        <div>
+          <div class="sec-h">What changed</div>
+          <p>${esc(sc.note)}</p>
+          <div class="list" style="margin-top:16px">
+            ${sc.edits.map((e) => `<div class="item" style="display:block"><p>${esc(e)}</p><p class="muted">${esc(EDITS[e])}</p></div>`).join("")}
+          </div>
+        </div>
+        <div>
+          <div class="sec-h">Everything that was said</div>
+          <div class="lines">
+            ${sc.raw
+              .map(
+                ([w, t, a]) => `<div class="line ${["cut", "", "moved"][a]}">
+                ${w ? `<span class="who">${esc(w)}</span> ${esc(t)}` : `<span class="muted">${esc(t)}</span>`}
+                ${a === 0 ? `<span class="why">cut</span>` : a === 2 ? `<span class="why">moved</span>` : ""}</div>`
+              )
+              .join("")}
+          </div>
+        </div>
+      </div>
+
+      <div class="sec">
+        <div class="sec-h">Your take</div>
+        <p>How do you feel about ${esc(subject)} now?</p>
+        <div class="choices">${choice("feel", "more", "Kinder")}${choice("feel", "same", "The same")}${choice("feel", "less", "Harsher")}</div>
+        <p>Did you notice the edit before?</p>
+        <div class="choices">${choice("saw", "yes", "Yes")}${choice("saw", "no", "No")}</div>
+        <p class="red" id="takeMsg">${takeMsg(take)}</p>
+      </div>
+    </div>`;
+
+  $$("[data-q]").forEach((b) =>
+    b.addEventListener("click", () => {
+      const t = (state.takes[sc.id] = { ...state.takes[sc.id], [b.dataset.q]: b.dataset.v });
+      store.set("takes", state.takes);
+      $$(`[data-q="${b.dataset.q}"]`).forEach((x) => x.classList.toggle("on", x === b));
+      $("#takeMsg").textContent = takeMsg(t);
+    })
+  );
+
+  /* playback simulation */
+  let t = 0;
+  let playing = true;
+  let lastR, lastA;
+  const fmt = (s) => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, "0")}`;
+  const sub = (w, x) => (w ? `${esc(w)}: ${esc(x)}` : `<span style="opacity:.8">${esc(x)}</span>`);
+  const paint = () => {
+    const rl = raw.find((x) => t >= x.s && t < x.s + x.d);
+    if (rl !== lastR) {
+      $("#rawSub").innerHTML = rl ? sub(rl.w, rl.t) : "";
+      lastR = rl;
+    }
+    const ai = t >= A ? -1 : Math.min(sc.aired.length - 1, Math.floor((t / A) * sc.aired.length));
+    if (ai !== lastA) {
+      $("#airedSub").innerHTML = ai < 0 ? `<span style="opacity:.8">The aired scene is over</span>` : sub(...sc.aired[ai]);
+      $("#airedScreen .fill").style.opacity = ai < 0 ? 0.35 : 1;
+      lastA = ai;
+    }
+    $("#prog").style.width = (t / T) * 100 + "%";
+    $("#h1").style.left = (t / T) * 100 + "%";
+    $("#h2").style.left = (Math.min(t, A) / T) * 100 + "%";
+    $("#clock").textContent = `${fmt(t)} / ${fmt(T)}`;
+  };
+  paint();
+  state.timers.push(
+    setInterval(() => {
+      if (!playing) return;
+      t = (t + 0.1) % T;
+      paint();
+    }, 100)
+  );
+  $("#play").addEventListener("click", () => {
+    playing = !playing;
+    $("#play").textContent = playing ? "Pause" : "Play";
+    $("#screens").classList.toggle("paused", !playing);
+  });
+  $("#track").addEventListener("click", (e) => {
+    const b = e.currentTarget.getBoundingClientRect();
+    t = ((e.clientX - b.left) / b.width) * T;
+    paint();
+  });
+}
+
+function takeMsg(t) {
+  if (!t.feel || !t.saw) return "";
+  return t.saw === "no" ? "That's how editing works. It's made not to be noticed." : "Good eye. It gets easier every time.";
+}
+
+/* ==========================================================
+   UPLOADED FOOTAGE
+   ========================================================== */
+function uploadPage(r) {
+  const u = state.uploads.find((x) => x.id === r.a);
+  if (!u) return go("#/library");
+  const show = showById(u.showId);
+  const url = u.blob ? URL.createObjectURL(u.blob) : null;
+  if (url) state.urls.push(url);
+  const media = u.type?.startsWith("video/")
+    ? `<video src="${url}" controls playsinline></video>`
+    : u.type?.startsWith("image/")
+    ? `<img src="${url}" alt="Uploaded still">`
+    : `<div class="fill" style="${cover(show)};filter:grayscale(.7) brightness(.6)"></div><div class="sub">No preview for this file type</div>`;
+  const row = (k, v) => `<div class="item"><span class="muted">${k}</span><span style="text-align:right;min-width:0">${v}</span></div>`;
+
+  main.innerHTML = `
+    <div class="page">
+      <div class="head">
+        <div><p class="muted">${esc(show.title)} · ${esc(show.episodes[u.episode].title)}</p><h1 class="l">Raw footage</h1></div>
+        <a class="btn soft" href="#/show/${show.id}/${u.episode}">Back to episode</a>
+      </div>
+      <div class="screen grain">${media}</div>
+      <div class="sec list">
+        ${row("File", esc(u.fileName))}
+        ${row("Camera", esc(u.camera || "Not given"))}
+        ${row("Size", fmtBytes(u.size))}
+        ${row("Uploaded", fmtDate(u.uploadedAt))}
+        ${row("Producer", esc(STUDIOS[u.studio]))}
+        ${u.edits?.length ? row("Edits disclosed", esc(u.edits.join(", "))) : ""}
+        ${u.note ? row("Note", esc(u.note)) : ""}
+        ${row("Fingerprint", `<span class="mono muted">${esc(u.sha256)}</span>`)}
+      </div>
+    </div>`;
+}
+
+/* ==========================================================
+   EDITS EXPLAINED + ABOUT
+   ========================================================== */
+function edits() {
+  const example = (name) => {
+    for (const s of myShows())
+      for (let ei = 0; ei < s.episodes.length; ei++)
+        if (isArchived(s, ei, state.uploads))
+          for (let si = 0; si < s.episodes[ei].scenes.length; si++)
+            if (sceneFor(s, ei, si).edits.includes(name)) return `#/scene/${s.id}/${ei}/${si}`;
+  };
+  main.innerHTML = `
+    <div class="page">
+      <div class="head"><div><h1 class="l">Edits explained</h1><p class="muted">Learn the tricks once, spot them everywhere.</p></div></div>
+      <div class="list gloss">
+        ${Object.entries(EDITS)
+          .map(([k, v]) => {
+            const ex = example(k);
+            return `<div class="item"><span>${esc(k)}</span><span class="muted">${esc(v)}</span>${ex ? `<a class="text-btn" href="${ex}">See it</a>` : "<span></span>"}</div>`;
+          })
+          .join("")}
+      </div>
+    </div>`;
+}
+
+function about() {
+  main.innerHTML = `
+    <div class="page">
+      <div class="head"><div><h1 class="l">About Uncut</h1></div></div>
+      <div class="prose">
+        <p>Reality dating shows film for hundreds of hours to make one episode. What you see is a story built in the edit, but it's sold as real.</p>
+        <p>That matters. We compare our own looks and relationships to what we see, and heavy viewing slowly shapes what feels normal. When an edit is unfair, a real person gets the hate.</p>
+        <p>Uncut is an intervention for viewers aged 18 to 30. Producers must archive all the footage they film, unedited, within 72 hours of airing. You can open it from the app you already use, next to every scene.</p>
+        <p class="muted">Shows, cast and studios are fictional. The app links are a mockup. Files uploaded in producer mode stay in your own browser.</p>
+        <p class="muted">Festinger (1954) · Gerbner (1976) · Ferris et al. (2007) · Horton and Wohl (1956) · McGuire (1961)</p>
+      </div>
+    </div>`;
+}
+
+/* ==========================================================
+   PRODUCER MODE
+   ========================================================== */
+const WELFARE = [
+  "The footage is complete and unedited",
+  "Bathrooms and welfare sessions are left out",
+  "People who didn't consent are blurred",
+  "The cast had 48 hours to review it",
+];
+
+function producer() {
+  const shows = SHOWS.filter((s) => s.studio === state.studio);
+  main.innerHTML = `
+    <div class="page">
+      <div class="head"><div><h1 class="l">Upload footage</h1><p class="muted">Every camera, unedited, within 72 hours of airing.</p></div></div>
+
+      <label class="drop" id="drop">
+        <input type="file" id="file" multiple accept="video/*,image/*,audio/*,.mxf,.mov,.mp4,.srt,.vtt" aria-label="Choose footage files" />
+        <div><p>Drop raw footage here</p><p class="muted">or click to choose files</p></div>
+      </label>
+      <div class="list" id="files" style="border-top:0"></div>
+
+      <div class="sec form">
+        <label class="field"><span>Show</span><select class="in" id="upShow">${shows.map((s) => `<option value="${s.id}">${esc(s.title)}</option>`).join("")}</select></label>
+        <label class="field"><span>Episode</span><select class="in" id="upEp"></select></label>
+        <label class="field"><span>Camera</span><input class="in" id="upCam" placeholder="Fire-pit, wide camera" maxlength="60" /></label>
+        <label class="field"><span>Recorded</span><input class="in" id="upRec" type="datetime-local" /></label>
+      </div>
+
+      <div class="sec">
+        <div class="sec-h">What did the aired version change?</div>
+        <div class="checks">${Object.keys(EDITS).map((k) => `<label class="check"><input type="checkbox" name="edit" value="${esc(k)}" />${esc(k)}</label>`).join("")}</div>
+        <label class="field" style="margin-top:16px"><span>Note for viewers</span><textarea class="in" id="upNote" maxlength="400"></textarea></label>
+      </div>
+
+      <div class="sec">
+        <div class="sec-h">Before you upload</div>
+        <div class="checks">${WELFARE.map((t) => `<label class="check"><input type="checkbox" name="welfare" />${esc(t)}</label>`).join("")}</div>
+        <div style="display:flex;gap:16px;align-items:center;margin-top:24px;flex-wrap:wrap">
+          <button class="btn" id="upBtn" disabled>Upload</button>
+          <div id="upProg" style="flex:1;min-width:200px;display:none"><div class="bar"><span id="upBar" style="width:0"></span></div><p class="muted" id="upStage" style="margin-top:6px"></p></div>
+        </div>
+      </div>
+
+      <div class="sec">
+        <div class="sec-h">Your shows</div>
+        <div class="list" id="compliance"></div>
+      </div>
+
+      <div class="sec">
+        <div class="sec-h">Upload history</div>
+        <div class="list" id="history"></div>
+      </div>
+    </div>`;
+
+  $("#upShow").addEventListener("change", () => fillEpisodes());
+  fillEpisodes();
+  $$("input[type=checkbox]", main).forEach((c) => c.addEventListener("change", validate));
+  $("#upBtn").addEventListener("click", upload);
+
+  const drop = $("#drop");
+  ["dragenter", "dragover"].forEach((t) => drop.addEventListener(t, (e) => (e.preventDefault(), drop.classList.add("over"))));
+  ["dragleave", "drop"].forEach((t) => drop.addEventListener(t, () => drop.classList.remove("over")));
+  drop.addEventListener("drop", (e) => {
+    e.preventDefault();
+    addFiles(e.dataTransfer.files);
+  });
+  $("#file").addEventListener("change", (e) => {
+    addFiles(e.target.files);
+    e.target.value = "";
+  });
+  renderFiles();
+  renderStatus();
+}
+
+function fillEpisodes(keep) {
+  const show = showById($("#upShow").value);
+  $("#upEp").innerHTML = show.episodes
+    .map((ep, i) => `<option value="${i}">${esc(ep.title)}${isArchived(show, i, state.uploads) ? "" : " (due)"}</option>`)
+    .join("");
+  const due = show.episodes.findIndex((_, i) => !isArchived(show, i, state.uploads));
+  $("#upEp").value = keep ?? (due >= 0 ? due : 0);
+}
+
+function addFiles(list) {
+  state.pending.push(...list);
+  renderFiles();
+}
+
+function renderFiles() {
+  $("#files").innerHTML = state.pending
+    .map((f, i) => `<div class="item"><span>${esc(f.name)}</span><span style="display:flex;gap:16px"><span class="meta">${fmtBytes(f.size)}</span><button class="text-btn" data-rm="${i}">Remove</button></span></div>`)
+    .join("");
+  $$("[data-rm]").forEach((b) =>
+    b.addEventListener("click", () => {
+      state.pending.splice(+b.dataset.rm, 1);
+      renderFiles();
+    })
+  );
+  validate();
+}
+
+function validate() {
+  const btn = $("#upBtn");
+  if (btn) btn.disabled = !(state.pending.length && $$('input[name="welfare"]').every((c) => c.checked));
+}
+
+function renderStatus() {
+  const shows = SHOWS.filter((s) => s.studio === state.studio);
+  $("#compliance").innerHTML = shows
+    .map((s) => {
+      const n = s.episodes.filter((_, i) => isArchived(s, i, state.uploads)).length;
+      const done = n === s.episodes.length;
+      return `<div class="item"><span>${esc(s.title)}</span><span style="display:flex;gap:16px;align-items:center">
+        <span class="meta">${n} of ${s.episodes.length} archived</span><span class="tag ${done ? "red" : ""}">${done ? "Complete" : "Overdue"}</span></span></div>`;
+    })
+    .join("");
+  const mine = state.uploads.filter((u) => u.studio === state.studio);
+  $("#history").innerHTML = mine.length
+    ? mine
+        .map((u) => `<a class="item" href="#/upload/${u.id}"><span>${esc(u.fileName)}</span><span class="meta">${esc(showById(u.showId).title)} · ${fmtDate(u.uploadedAt)}</span></a>`)
+        .join("")
+    : `<div class="item"><span class="muted">Nothing uploaded yet</span></div>`;
+}
+
+async function upload() {
+  $("#upBtn").disabled = true;
+  const files = state.pending.slice();
+  const episode = +$("#upEp").value;
+  const rec = $("#upRec").value;
+  const meta = {
+    studio: state.studio,
+    showId: $("#upShow").value,
+    episode,
+    camera: $("#upCam").value.trim(),
+    recordedAt: rec ? new Date(rec).toLocaleString() : "",
+    note: $("#upNote").value.trim(),
+    edits: $$('input[name="edit"]:checked').map((c) => c.value),
+  };
+  const prog = (p, s) => {
+    $("#upBar").style.width = p * 100 + "%";
+    $("#upStage").textContent = s;
+  };
+  $("#upProg").style.display = "block";
   try {
-    const db = await openDB();
-    return await new Promise((res, rej) => {
-      const r = db.transaction("uploads").objectStore("uploads").getAll();
-      r.onsuccess = () => res(r.result.sort((x, y) => y.uploadedAt - x.uploadedAt));
-      r.onerror = () => rej(r.error);
-    });
-  } catch {
-    return [];
+    for (let i = 0; i < files.length; i++) {
+      const f = files[i];
+      const base = i / files.length;
+      const step = 1 / files.length;
+      prog(base, "Checking " + f.name);
+      const sha256 = await fingerprint(f);
+      for (let c = 1; c <= 10; c++) {
+        await new Promise((r) => setTimeout(r, 60));
+        prog(base + step * (c / 10) * 0.95, "Uploading " + f.name);
+      }
+      await dbPut({
+        ...meta,
+        id: crypto.randomUUID ? crypto.randomUUID() : String(Date.now() + Math.random()),
+        fileName: f.name,
+        size: f.size,
+        type: f.type,
+        sha256,
+        blob: f,
+        uploadedAt: Date.now(),
+      });
+    }
+    prog(1, "Archived");
+    state.uploads = await dbAll();
+    state.pending = [];
+    $$('input[type="checkbox"]', main).forEach((c) => (c.checked = false));
+    $("#upNote").value = "";
+    renderFiles();
+    renderStatus();
+    fillEpisodes(episode);
+    toast("Archived. Viewers can see it now.");
+  } catch (err) {
+    console.error(err);
+    prog(0, "Upload failed. The browser may be out of space.");
+  } finally {
+    validate();
   }
 }
 
-async function dbPut(rec) {
-  const db = await openDB();
-  return new Promise((res, rej) => {
-    const tx = db.transaction("uploads", "readwrite");
-    tx.objectStore("uploads").put(rec);
-    tx.oncomplete = () => res(rec);
-    tx.onerror = () => rej(tx.error);
-  });
-}
-
-async function dbClear() {
-  const db = await openDB();
-  return new Promise((res, rej) => {
-    const tx = db.transaction("uploads", "readwrite");
-    tx.objectStore("uploads").clear();
-    tx.oncomplete = res;
-    tx.onerror = () => rej(tx.error);
-  });
-}
-
-/* episode is archived if seeded as archived, or a producer uploaded footage for it */
-function isArchived(show, ep, uploads) {
-  return ep.archived || uploads.some((u) => u.showId === show.id && u.episode === ep.n);
-}
-
-/* SHA-256 fingerprint. Big files: hash first 32 MB + size, labelled as partial. */
-async function fingerprint(file) {
-  const LIMIT = 32 * 1024 * 1024;
-  const partial = file.size > LIMIT;
-  const buf = await file.slice(0, LIMIT).arrayBuffer();
-  const sizeTag = new TextEncoder().encode(String(file.size));
-  const joined = new Uint8Array(buf.byteLength + sizeTag.byteLength);
-  joined.set(new Uint8Array(buf), 0);
-  joined.set(sizeTag, buf.byteLength);
-  const h = await crypto.subtle.digest("SHA-256", joined);
-  const hex = [...new Uint8Array(h)].map((b) => b.toString(16).padStart(2, "0")).join("");
-  return { hex, partial };
-}
+/* ---------- start ---------- */
+(async () => {
+  state.uploads = await dbAll();
+  render();
+})();
