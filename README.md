@@ -1,28 +1,31 @@
-# Uncut — see what the edit left out
+# Uncut
 
-A media-psychology intervention concept: producers of reality dating shows must upload the **full, unedited
-footage** of every episode to a public archive, and that archive is reachable from inside the streaming services
-that air the show.
+Reality dating shows film for hundreds of hours to make one episode. Uncut is a media-psychology intervention
+concept: producers must archive all of the footage, unedited, and viewers can open it next to every scene from
+the streaming apps they already use.
 
-Target audience: women aged 18–30, the core audience of reality dating formats.
+Built for viewers aged 18 to 30.
 
-## The prototype
+## The app
 
-| Page | What it does |
-| --- | --- |
-| `index.html` | The idea: the aired-vs-filmed ratio, the psychology behind it (social comparison, cultivation, parasocial interaction, inoculation) and how the rules work. |
-| `watch.html` | Viewer archive. Browse shows, open an episode, and compare any aired scene with its raw source: side-by-side screens, transcripts with cut lines highlighted, the producer's edit disclosure, and a short reflection. |
-| `portal.html` | Producer portal. Sign in as a production company, see compliance per show, and upload raw footage with SHA-256 fingerprinting, edit disclosures and a cast-welfare checklist. |
+- **Link your apps**: a mockup that links Netflix, Prime Video, Disney+, HBO Max and Videoland.
+- **Library**: the reality dating shows from your linked apps.
+- **Scenes**: the aired version and the raw footage side by side, with a timeline of what was cut or moved,
+  everything that was said, and a short check-in.
+- **Edits explained**: the editing tricks, each with an example.
+- **Producer mode**: upload raw footage with edit disclosures and welfare checks. Uploads are real files,
+  stored only in your own browser, and show up in the library straight away.
 
-Uploads are real files stored in your own browser (IndexedDB). They appear in the viewer archive straight away
-but never leave your device. Shows, cast, studios and streaming services are fictional; figures are illustrative.
+Shows, cast and studios are fictional. Figures are illustrative.
+
+## Design
+
+One typeface (San Francisco, through the system font stack), one weight, two text sizes, and one colour:
+tally red, the light on a camera that means "you're being recorded", and also the colour these shows sell
+romance with.
 
 ## Run locally
-
-It's a static site with no build step:
 
 ```bash
 python -m http.server 5173
 ```
-
-Then open http://localhost:5173.
