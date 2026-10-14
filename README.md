@@ -12,7 +12,7 @@ Built for viewers aged 18 to 30.
 - **Library**: the reality dating shows from your linked apps.
 - **Scenes**: the aired version and the raw footage side by side, with a timeline of what was cut or moved,
   everything that was said, and a short check-in.
-- **Edits explained**: the editing tricks, each with an example.
+- **Whole episode raw**: every camera, the full day, with markers where the aired scenes came from.
 - **Producer mode**: upload raw footage with edit disclosures and welfare checks. Uploads are real files,
   stored only in your own browser, and show up in the library straight away.
 
