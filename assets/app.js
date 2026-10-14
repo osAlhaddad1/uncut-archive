@@ -692,8 +692,6 @@ function about() {
         <p>Reality dating shows film for hundreds of hours to make one episode. What you see is a story built in the edit, but it's sold as real.</p>
         <p>That matters. We compare our own looks and relationships to what we see, and heavy viewing slowly shapes what feels normal. When an edit is unfair, a real person gets the hate.</p>
         <p>Uncut is an intervention for viewers aged 18 to 30. Producers must archive all the footage they film, unedited, within 72 hours of airing. You can open it from the app you already use, next to every scene.</p>
-        <p class="muted">Shows, cast and studios are fictional. The app links are a mockup. Files uploaded in producer mode stay in your own browser.</p>
-        <p class="muted">Festinger (1954) · Gerbner (1976) · Ferris et al. (2007) · Horton and Wohl (1956) · McGuire (1961)</p>
       </div>
     </div>`;
 }
